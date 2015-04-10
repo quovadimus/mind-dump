@@ -1,0 +1,55 @@
+#!/bin/bash
+##
+## Inital JAMFHelper window runs, offering users the option to install now and open Self Service, or to delay.
+
+/Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType "utility" -icon "/System/Library/CoreServices/Software\ Update.app/Contents/Resources/SoftwareUpdate.icns" -heading "ISD Approved Software Updates are Available for your Mac" -description "Updates are available for your Mac.  Please install your updates from the Self Service Application.  Instructions for use can be found in the left column of the application.     
+You may delay these updates for up to X hours.                                                                                                                                                                                                                                           To delay, click the 'Remind Me' button below.                                                                                                                                                                                                                                                                    Please contact the Mac Support Team with any questions at Mac_Support_Team@navyfederal.org"  -button1 "Install Now" -button2 "Remind Me" -defaultbutton '2' alignHeading "center" -aligndescription "left"
+		
+	helper=`echo $?`
+	echo " " $helper
+## If users choses install now, self service will open.
+	
+	if [ "$helper" -eq "0" ]; then
+	Open /Applications/Self\ Service.app 
+	jamf killJAMFHelper
+	
+## If user choses delay, a new window will open asking them to chose a delay time. 
+	else
+		command /Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType 'hud' -title "Delay" -description "Please Pick a Delay Time" -icon "$ICON" -showDelayOptions "1, 3600, 5400" -button2 "Delay" -alignHeading "center" -aligndescription "left"
+	
+	choice=`echo $?`
+	echo " " $choice
+
+## The script will sleep for a desinated time then the jamfhelper runs again, this time giving the option of install now or Exit.
+	
+		if [ "$choice" -eq "1" ]; then
+			sleep 60
+		elif [ "$choice" -eq "162" ]; then
+			sleep 3600
+		elif [ "$choice" -eq "242" ]; then
+			sleep 5400
+		elif [ "$choice" -eq "1" ] || [ "$choice" -eq "161" ] || [ "$choice" -eq "241" ]; then
+			choice=0
+		fi
+	fi
+		while [ $choice -ne "0" ]
+		do
+		
+		/Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType "hud" -heading "ISD Approved Software Updates are Available for your Mac" -description "Updates are available for your Mac.  Please install your updates from the Self Service Application.  Instructions for use can be found in the left column of the application.  Please contact the Mac Support Team with any questions at Mac_Support_Team@navyfederal.org"  -button1 "Install Now" -button2 "Exit" -defaultbutton '2' alignHeading "center" -aligndescription "left"
+	
+				helper=`echo $?`
+				echo " " $helper
+				
+## If the users choses install now, self service will open
+				
+				if [ "$helper" -eq "0" ]; then
+					Open /Applications/Self\ Service.app 
+					jamf killJAMFHelper
+## If the user choses exit, they will get another window to confirm their choice, then the script will exit.
+					
+				else
+					command /Library/Application\ Support/JAMF/bin/jamfHelper.app/Contents/MacOS/jamfHelper -windowType 'hud' -description "If you chose not to install at this time, your updates will be applied during the next available patch window." -button1 "I Understand" -defaultbutton '1'
+				choice=0
+				fi
+			done
+			
